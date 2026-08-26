@@ -1,0 +1,50 @@
+{
+  "name": "cache-out",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A Y2K casino that forces your friend group to do LeetCode daily.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "trace": "node tools/pixeltracer/cli.ts",
+    "trace:verify": "node tools/pixeltracer/verify.ts",
+    "trace:test": "node --test tools/pixeltracer/test/*.test.ts",
+    "assets": "node tools/pixeltracer/assets.ts",
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "oxlint src tools scripts",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "backdrops": "node tools/pixeltracer/sheet.ts --scene scenes/env/table.ts --frames 64 --cols 8 --width 480 --height 270 && node tools/pixeltracer/sheet.ts --scene scenes/env/floor.ts --frames 64 --cols 8 --width 480 --height 270 && node tools/pixeltracer/sheet.ts --scene scenes/env/foreground.ts --frames 64 --cols 8 --width 480 --height 270 --alpha",
+    "backdrops:all": "npm run backdrops && node tools/pixeltracer/sheet.ts --scene scenes/env/neon.ts --frames 48 --cols 8 --width 480 --height 270 && node tools/pixeltracer/sheet.ts --scene scenes/env/parlour.ts --frames 48 --cols 8 --width 480 --height 270",
+    "sync:shared": "node scripts/sync-shared.mjs",
+    "check:shared": "node scripts/sync-shared.mjs --check",
+    "verify": "npm run typecheck && npm run lint && npm run check:shared && npm test && npm run trace:test && npm run trace:verify",
+    "check:functions": "npx --yes deno@2 check supabase/functions/leetcode/index.ts supabase/functions/sweep/index.ts",
+    "icons": "node tools/pixeltracer/icons.ts"
+  },
+  "dependencies": {
+    "@fontsource-variable/chivo": "^5.3.0",
+    "@fontsource-variable/pixelify-sans": "^5.3.0",
+    "@fontsource/press-start-2p": "^5.3.0",
+    "@supabase/supabase-js": "^2.115.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.4.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-react": "^6.1.1",
+    "oxlint": "^1.80.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11"
+  }
+}
