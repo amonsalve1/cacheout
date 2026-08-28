@@ -152,3 +152,153 @@ export class Box implements Primitive {
     return { t: t0, p, n, front, mat: this.mat, u: uAxis, v: vAxis }
   }
 }
+
+export class Cylinder implements Primitive {
+  center: Vec3
+  radius: number
+  height: number
+  mat: Material
+
+  capMat: Material
+
+  constructor(center: Vec3, radius: number, height: number, mat: Material, capMat?: Material) {
+    this.center = center
+    this.radius = radius
+    this.height = height
+    this.mat = mat
+    this.capMat = capMat ?? mat
+  }
+
+  hit(r: Ray, tMin: number, tMax: number): Hit | null {
+    let best: Hit | null = null
+    let closest = tMax
+    const halfH = this.height / 2
+
+    const ox = r.origin.x - this.center.x
+    const oz = r.origin.z - this.center.z
+    const a = r.dir.x * r.dir.x + r.dir.z * r.dir.z
+    if (a > 1e-9) {
+      const b = 2 * (ox * r.dir.x + oz * r.dir.z)
+      const c = ox * ox + oz * oz - this.radius * this.radius
+      const disc = b * b - 4 * a * c
+      if (disc >= 0) {
+        const sq = Math.sqrt(disc)
+        for (const t of [(-b - sq) / (2 * a), (-b + sq) / (2 * a)]) {
+          if (t < tMin || t > closest) continue
+          const p = at(r, t)
+          const dy = p.y - this.center.y
+          if (Math.abs(dy) > halfH) continue
+          const outward = norm(v3(p.x - this.center.x, 0, p.z - this.center.z))
+          const { n, front } = orient(r, outward)
+          const u = (Math.atan2(p.z - this.center.z, p.x - this.center.x) + Math.PI) / (2 * Math.PI)
+          best = { t, p, n, front, mat: this.mat, u, v: dy / this.height + 0.5 }
+          closest = t
+          break
+        }
+      }
+    }
+
+    if (Math.abs(r.dir.y) > 1e-9) {
+      for (const sign of [-1, 1]) {
+        const t = (this.center.y + sign * halfH - r.origin.y) / r.dir.y
+        if (t < tMin || t > closest) continue
+        const p = at(r, t)
+        const dx = p.x - this.center.x
+        const dz = p.z - this.center.z
+        if (dx * dx + dz * dz > this.radius * this.radius) continue
+        const { n, front } = orient(r, v3(0, sign, 0))
+        best = {
+          t,
+          p,
+          n,
+          front,
+          mat: this.capMat,
+          u: dx / (2 * this.radius) + 0.5,
+          v: dz / (2 * this.radius) + 0.5,
+        }
+        closest = t
+      }
+    }
+    return best
+  }
+}
+
+export type Mat3 = [number, number, number, number, number, number, number, number, number]
+
+export function rotationXYZ(rx: number, ry: number, rz: number): Mat3 {
+  const cx = Math.cos(rx),
+    sx = Math.sin(rx)
+  const cy = Math.cos(ry),
+    sy = Math.sin(ry)
+  const cz = Math.cos(rz),
+    sz = Math.sin(rz)
+
+  return [
+    cz * cy,
+    cz * sy * sx - sz * cx,
+    cz * sy * cx + sz * sx,
+    sz * cy,
+    sz * sy * sx + cz * cx,
+    sz * sy * cx - cz * sx,
+    -sy,
+    cy * sx,
+    cy * cx,
+  ]
+}
+
+export const mat3Mul = (m: Mat3, v: Vec3): Vec3 =>
+  v3(
+    m[0] * v.x + m[1] * v.y + m[2] * v.z,
+    m[3] * v.x + m[4] * v.y + m[5] * v.z,
+    m[6] * v.x + m[7] * v.y + m[8] * v.z,
+  )
+
+export const mat3T = (m: Mat3): Mat3 => [m[0], m[3], m[6], m[1], m[4], m[7], m[2], m[5], m[8]]
+
+export class Transformed implements Primitive {
+  private child: Primitive
+  private rot: Mat3
+  private inv: Mat3
+  private translate: Vec3
+
+  constructor(child: Primitive, opts: { rotate?: Vec3; translate?: Vec3 } = {}) {
+    const rotate = opts.rotate ?? v3(0, 0, 0)
+    this.child = child
+    this.rot = rotationXYZ(rotate.x, rotate.y, rotate.z)
+    this.inv = mat3T(this.rot)
+    this.translate = opts.translate ?? v3(0, 0, 0)
+  }
+
+  hit(r: Ray, tMin: number, tMax: number): Hit | null {
+    const localOrigin = mat3Mul(this.inv, sub(r.origin, this.translate))
+    const localDir = mat3Mul(this.inv, r.dir)
+    const h = this.child.hit({ origin: localOrigin, dir: localDir }, tMin, tMax)
+    if (!h) return null
+    return {
+      ...h,
+      p: add(mat3Mul(this.rot, h.p), this.translate),
+      n: mat3Mul(this.rot, h.n),
+    }
+  }
+}
+
+export class Group implements Primitive {
+  parts: Primitive[]
+
+  constructor(parts: Primitive[]) {
+    this.parts = parts
+  }
+
+  hit(r: Ray, tMin: number, tMax: number): Hit | null {
+    let best: Hit | null = null
+    let closest = tMax
+    for (const p of this.parts) {
+      const h = p.hit(r, tMin, closest)
+      if (h) {
+        closest = h.t
+        best = h
+      }
+    }
+    return best
+  }
+}
