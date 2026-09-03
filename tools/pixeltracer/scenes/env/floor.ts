@@ -173,3 +173,47 @@ function buildObjects(): Primitive[] {
 
 let cached: Primitive[] | null = null
 const objects = (): Primitive[] => (cached ??= buildObjects())
+
+export function build(aspect = 16 / 9, t = 0): Scene {
+  const a = 2 * Math.PI * t
+
+  const from = v3(0.95 * Math.sin(a), 1.72 + 0.05 * Math.sin(2 * a), 8.15 + 0.45 * Math.cos(a))
+
+  const to = v3(-1.55 * Math.sin(a), 1.5 + 0.04 * Math.sin(2 * a), -9.0)
+
+  const up = v3(0.022 * Math.sin(a), 1, 0)
+
+  return {
+    camera: camera({ from, to, up, fovDeg: 52, aspect }),
+    objects: objects(),
+    lights: [
+      { pos: v3(-2.3, 3.15, 5.5), color: c('gold'), intensity: 0.9, radius: 8 },
+      { pos: v3(2.4, 3.15, 5.6), color: c('gold-lt'), intensity: 0.8, radius: 8 },
+
+      { pos: v3(-3.9, 2.7, 0.2), color: c('hot-pink'), intensity: 1.9, radius: 20 },
+      { pos: v3(3.9, 2.7, -1.4), color: c('cyan'), intensity: 1.9, radius: 20 },
+
+      { pos: v3(0, 3.35, -3.2), color: c('gold-lt'), intensity: 1.6, radius: 22 },
+      { pos: v3(0, 3.2, -11.0), color: c('amethyst'), intensity: 1.7, radius: 26 },
+
+      { pos: v3(-2.9, 2.9, 9.9), color: c('lilac'), intensity: 0.5, radius: 11 },
+      { pos: v3(2.9, 2.9, 9.9), color: c('lilac'), intensity: 0.5, radius: 11 },
+    ],
+    ambient: mul(c('velvet'), 0.55),
+    background: (dir) => {
+      const h = clamp01(dir.y * 0.5 + 0.5)
+      const halo = Math.pow(1 - Math.abs(dir.y), 6)
+      return add(
+        lerp(mul(c('ink'), 1.2), mul(c('velvet'), 1.2), h),
+        mul(c('hot-pink'), halo * 0.25),
+      )
+    },
+    shadeMode: defaults.shadeMode,
+    celBands: defaults.celBands,
+
+    maxDepth: 3,
+
+    fog: { color: mul(c('velvet'), 0.7), density: 0.032 },
+    seed: defaults.seed,
+  }
+}
