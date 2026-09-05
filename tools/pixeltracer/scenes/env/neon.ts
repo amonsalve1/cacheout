@@ -164,3 +164,43 @@ function room(): Primitive[] {
   cached = objects
   return objects
 }
+
+export function build(aspect = 16 / 9, t = 0): Scene {
+  const a = TAU * (t - Math.floor(t))
+
+  const from = v3(Math.sin(a) * 3.0, 3.15 + Math.sin(2 * a) * 0.45, 7.6 + Math.cos(a) * 2.8)
+  const to = v3(Math.sin(a) * 1.2, 2.7 - Math.cos(a) * 0.22, -9.0)
+
+  const velvet = c('velvet')
+  const hotPink = c('hot-pink')
+  const violet = c('violet')
+  const amethyst = c('amethyst')
+
+  return {
+    camera: camera({ from, to, fovDeg: 47, aspect }),
+    objects: room(),
+    lights: [
+      { pos: v3(-4.6, 5.6, -3.0), color: hotPink, intensity: 2.8, radius: 20 },
+      { pos: v3(4.6, 5.0, -8.5), color: c('cyan'), intensity: 2.6, radius: 22 },
+      { pos: v3(0, 10.5, -14.5), color: c('gold'), intensity: 2.4, radius: 26 },
+      { pos: v3(0, 5.0, -26), color: amethyst, intensity: 2.0, radius: 26 },
+
+      { pos: v3(0, 8.0, 6.5), color: c('ice'), intensity: 1.9, radius: 22 },
+      { pos: v3(-2.0, 1.1, 0.5), color: c('magenta-dk'), intensity: 1.4, radius: 15 },
+    ],
+    ambient: mul(velvet, 0.8),
+    background: (dir) => {
+      const up = clamp01(dir.y * 0.5 + 0.5)
+      const sky = lerp(mul(violet, 0.42), mul(velvet, 0.4), clamp01((up - 0.5) * 2.4))
+      const glow = Math.pow(1 - Math.abs(dir.y), 5)
+      return add(sky, mul(hotPink, glow * 0.34))
+    },
+    shadeMode: defaults.shadeMode,
+    celBands: defaults.celBands,
+
+    maxDepth: 3,
+
+    fog: { color: mul(lerp(velvet, hotPink, 0.14), 0.95), density: 0.017 },
+    seed: defaults.seed,
+  }
+}
