@@ -181,4 +181,154 @@ export function build(aspect = 16 / 9, t = 0): Scene {
   for (const [a, denom, n, down] of seats) objects.push(...station(a, denom, n, down))
 
   const A0 = 4.95
+
+  objects.push(
+    new Transformed(
+      new Box(
+        v3(0, 0, 0),
+        v3(2.1, 1.25, 2.9),
+        lambert(c('dusk'), { specular: 0.35, shininess: 44 }),
+      ),
+      {
+        rotate: v3(-0.16, A0 + 0.4, 0),
+        translate: place(A0 + 0.4, -0.2, 6.05, TOP + 0.6),
+      },
+    ),
+    new Transformed(
+      new Box(
+        v3(0, 0, 0),
+        v3(2.0, 0.2, 2.7),
+        metal(c('chrome-dim'), { reflectivity: 0.22, roughness: 0.04 }),
+      ),
+      {
+        rotate: v3(-0.16, A0 + 0.4, 0),
+        translate: place(A0 + 0.4, -0.2, 6.05, TOP + 1.28),
+      },
+    ),
+  )
+
+  objects.push(
+    new Transformed(
+      new Box(v3(0, 0, 0), v3(1.9, 0.85, 2.5), lambert(c('ink'), { specular: 0.28 })),
+      {
+        rotate: v3(0, A0 - 0.85, 0),
+        translate: place(A0 - 0.85, 0.1, 6.15, TOP + 0.43),
+      },
+    ),
+    new Transformed(
+      new Box(
+        v3(0, 0, 0),
+        v3(1.5, 0.45, 2.05),
+        lambert(c('chrome'), { specular: 0.3, shininess: 60, celBands: 2 }),
+      ),
+      {
+        rotate: v3(0, A0 - 0.85, 0),
+        translate: place(A0 - 0.85, 0.1, 6.15, TOP + 1.02),
+      },
+    ),
+  )
+
+  objects.push(
+    new Transformed(
+      new Box(v3(0, 0, 0), v3(1.6, 0.09, 2.4), lambert(c('ice'), { specular: 0.5, shininess: 70 })),
+      {
+        rotate: v3(0.0, A0 + 1.5, 0.2),
+        translate: place(A0 + 1.5, 0.0, 4.9, TOP + 0.2),
+      },
+    ),
+  )
+
+  objects.push(
+    new Transformed(
+      new Box(
+        v3(0, 0, 0),
+        v3(4.6, 0.5, 1.5),
+        metal(c('chrome-dim'), { reflectivity: 0.22, roughness: 0.05 }),
+      ),
+      {
+        rotate: v3(0, A0 + Math.PI, 0),
+        translate: place(A0 + Math.PI, 0, 6.2, TOP + 0.2),
+      },
+    ),
+  )
+  const bank: Array<[number, string]> = [
+    [-1.5, 'ivory'],
+    [0, 'red'],
+    [1.5, 'gold'],
+  ]
+  for (const [lx, d] of bank) {
+    objects.push(...chipStack(place(A0 + Math.PI, lx, 6.2, TOP + 0.45), 3, DENOM[d], 0.52, 0.17))
+  }
+
+  const loose: Array<[number, number, number, string]> = [
+    [1.9, 0.9, 2.55, 'gold'],
+    [4.0, -1.1, 2.9, 'ivory'],
+    [5.9, 0.5, 4.75, 'cyan'],
+  ]
+  for (const [a, lx, lz, d] of loose) {
+    objects.push(...chipStack(place(a, lx, lz, TOP), 1, DENOM[d], 0.56, 0.17))
+  }
+
+  const neonY = (r: number): number => 3.3 - 0.359 * r + 0.95
+
+  const bulbs: Array<[number, number, number, string]> = [
+    [0.18, 11.0, 0.55, 'hot-pink'],
+    [0.7, 15.2, 0.8, 'gold-lt'],
+    [1.18, 11.6, 0.58, 'cyan'],
+    [1.72, 17.8, 0.92, 'amethyst'],
+    [2.22, 10.8, 0.52, 'white'],
+    [2.74, 14.6, 0.78, 'hot-pink'],
+    [3.26, 11.9, 0.6, 'ice'],
+    [3.8, 18.4, 0.95, 'gold'],
+    [4.3, 11.2, 0.56, 'cyan'],
+    [4.84, 15.8, 0.82, 'hot-pink'],
+    [5.34, 12.2, 0.62, 'gold-lt'],
+    [5.88, 17.4, 0.9, 'amethyst'],
+  ]
+  for (const [a, r, size, name] of bulbs) {
+    objects.push(new Sphere(place(a, 0, r, neonY(r)), size, emissive(c(name))))
+  }
+
+  const strips: Array<[number, number, number, string]> = [
+    [0.95, 12.6, 9.0, 'hot-pink'],
+    [2.05, 16.4, 11.0, 'cyan'],
+    [3.1, 12.0, 8.5, 'magenta-dk'],
+    [4.15, 16.9, 11.5, 'gold'],
+    [5.25, 12.9, 9.5, 'violet'],
+  ]
+  for (const [a, r, len, name] of strips) {
+    objects.push(
+      new Transformed(new Cylinder(v3(0, 0, 0), 0.38, len, emissive(c(name))), {
+        rotate: v3(Math.PI / 2, a + Math.PI / 2, 0),
+        translate: place(a, 0, r, neonY(r)),
+      }),
+    )
+  }
+
+  const from = eyePosition(t)
+
+  return {
+    camera: camera({ from, to: EYE_TARGET, fovDeg: EYE_FOV, aspect }),
+    objects,
+    lights: [
+      { pos: v3(6.6, 5.4, 3.4), color: hotPink, intensity: 1.55, radius: 13 },
+      { pos: v3(-5.9, 5.0, 5.2), color: cyan, intensity: 1.45, radius: 13 },
+      { pos: v3(-3.6, 5.6, -6.8), color: gold, intensity: 1.5, radius: 14 },
+      { pos: v3(5.2, 4.8, -5.6), color: amethyst, intensity: 1.3, radius: 13 },
+      { pos: v3(0, 11.0, 0), color: c('mint'), intensity: 0.5, radius: 24 },
+    ],
+    ambient: mul(velvet, 0.85),
+    background: (dir) => {
+      const t2 = clamp01(dir.y * 0.5 + 0.5)
+      const glow = Math.pow(1 - Math.abs(dir.y), 6)
+      return add(lerp(mul(ink, 1.3), mul(velvet, 1.2), t2), mul(hotPink, glow * 0.35))
+    },
+    shadeMode: defaults.shadeMode,
+    celBands: 5,
+
+    maxDepth: 3,
+
+    fog: { color: mul(velvet, 1.0), density: 0.031 },
+    seed: defaults.seed,
+  }
 }
