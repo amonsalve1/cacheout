@@ -4,7 +4,7 @@ export type Split = { creditorId: string; cents: Cents }
 
 export function splitMarker(cents: Cents, finishOrder: string[]): Split[] {
   if (cents <= 0 || finishOrder.length === 0) return []
-  return [...new Set(finishOrder)].map((creditorId) => ({ creditorId, cents: Math.floor(cents / finishOrder.length) }))
+  return [...new Set(finishOrder)].map((creditorId) => ({ creditorId, cents }))
 }
 
 export type DayOutcome = {
