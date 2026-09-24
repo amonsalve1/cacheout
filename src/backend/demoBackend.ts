@@ -194,6 +194,107 @@ export function createDemoBackend(): Backend {
         ),
       })
     },
+    async playPowerup(targetId: string, kind: PowerupKind) {
+      if (targetId === state.meId) return
+
+      const already = state.powerups.some(
+        (p) => p.targetId === targetId && !p.clearedOn && deadlineOf(p) >= state.today,
+      )
+      if (already) throw new Error('This player already has a live powerup')
+      commit({
+        powerups: [
+          ...state.powerups,
+          {
+            id: `pw-${state.powerups.length + 1}`,
+            kind,
+            fromId: state.meId,
+            targetId,
+            playedOn: state.today,
+          },
+        ],
+      })
+    },
+
+    async react(anteId: string, emoji: string) {
+      commit({
+        antes: state.antes.map((a) => {
+          if (a.id !== anteId) return a
+          const fans = a.reactions[emoji] ?? []
+          const mine = fans.includes(state.meId)
+          const next = mine ? fans.filter((f) => f !== state.meId) : [...fans, state.meId]
+          const reactions = { ...a.reactions }
+          if (next.length) reactions[emoji] = next
+          else delete reactions[emoji]
+          return { ...a, reactions }
+        }),
+      })
+    },
+
+    async comment(anteId: string, body: string) {
+      commit({
+        antes: state.antes.map((a) =>
+          a.id === anteId
+            ? {
+                ...a,
+                comments: [
+                  ...a.comments,
+                  {
+                    id: `${anteId}-${a.comments.length}`,
+                    playerId: state.meId,
+                    body,
+                    createdAt: state.today,
+                  },
+                ],
+              }
+            : a,
+        ),
+      })
+    },
+
+    async updateProfile(patch) {
+      const me = state.players.find((p) => p.id === state.meId)
+      const changed =
+        patch.leetcodeUsername !== undefined && patch.leetcodeUsername !== me?.leetcodeUsername
+      if (
+        changed &&
+        me?.usernameLockedUntil &&
+        me.usernameLockedUntil > new Date().toISOString().slice(0, 10)
+      )
+        return { ok: false, message: `Handle locked until ${me.usernameLockedUntil}` }
+      commit({
+        players: state.players.map((pl) =>
+          pl.id === state.meId
+            ? {
+                ...pl,
+                ...patch,
+                usernameLockedUntil: changed
+                  ? new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10)
+                  : pl.usernameLockedUntil,
+              }
+            : pl,
+        ),
+      })
+      return { ok: true as const }
+    },
+
+    async updateTable(patch) {
+      new Intl.DateTimeFormat('en', { timeZone: patch.tz })
+      commit({ table: { ...state.table, ...patch } })
+    },
+    async joinByCode(code: string) {
+      if (code.toUpperCase().trim() !== state.table.joinCode.toUpperCase()) {
+        return { ok: false as const, message: 'No table here with that code' }
+      }
+      return { ok: true as const }
+    },
+
+    subscribe() {
+      return () => {}
+    },
+
+    applySweep(markers: Marker[], powerups: Snapshot['powerups'], lastSweptDay: string) {
+      commit({ markers, powerups, lastSweptDay })
+    },
   } as Backend & {
     applySweep: (m: Marker[], p: Snapshot['powerups'], d: string) => void
   }
