@@ -1,0 +1,26 @@
+{
+  "floor": {
+    "file": "floor.png",
+    "frames": 64,
+    "cols": 8,
+    "rows": 8,
+    "frameWidth": 480,
+    "frameHeight": 270
+  },
+  "table": {
+    "file": "table.png",
+    "frames": 64,
+    "cols": 8,
+    "rows": 8,
+    "frameWidth": 480,
+    "frameHeight": 270
+  },
+  "foreground": {
+    "file": "foreground.png",
+    "frames": 64,
+    "cols": 8,
+    "rows": 8,
+    "frameWidth": 480,
+    "frameHeight": 270
+  }
+}
