@@ -1,0 +1,86 @@
+{
+  "chip-white": {
+    "file": "chip-white.png",
+    "frames": 1,
+    "width": 160,
+    "height": 160
+  },
+  "chip-red": {
+    "file": "chip-red.png",
+    "frames": 1,
+    "width": 160,
+    "height": 160
+  },
+  "chip-blue": {
+    "file": "chip-blue.png",
+    "frames": 1,
+    "width": 160,
+    "height": 160
+  },
+  "chip-black": {
+    "file": "chip-black.png",
+    "frames": 1,
+    "width": 160,
+    "height": 160
+  },
+  "chip-spin": {
+    "file": "chip-spin.png",
+    "frames": 16,
+    "width": 160,
+    "height": 160
+  },
+  "die": {
+    "file": "die.png",
+    "frames": 1,
+    "width": 176,
+    "height": 176
+  },
+  "die-roll": {
+    "file": "die-roll.png",
+    "frames": 12,
+    "width": 176,
+    "height": 176
+  },
+  "slot-seven": {
+    "file": "slot-seven.png",
+    "frames": 1,
+    "width": 176,
+    "height": 176
+  },
+  "slot-cherry": {
+    "file": "slot-cherry.png",
+    "frames": 1,
+    "width": 176,
+    "height": 176
+  },
+  "slot-bar": {
+    "file": "slot-bar.png",
+    "frames": 1,
+    "width": 176,
+    "height": 176
+  },
+  "trophy": {
+    "file": "trophy.png",
+    "frames": 1,
+    "width": 192,
+    "height": 192
+  },
+  "dealer-idle": {
+    "file": "dealer-idle.png",
+    "frames": 1,
+    "width": 224,
+    "height": 224
+  },
+  "dealer-smug": {
+    "file": "dealer-smug.png",
+    "frames": 1,
+    "width": 224,
+    "height": 224
+  },
+  "dealer-gloating": {
+    "file": "dealer-gloating.png",
+    "frames": 1,
+    "width": 224,
+    "height": 224
+  }
+}
