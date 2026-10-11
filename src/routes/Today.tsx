@@ -159,6 +159,114 @@ export function Today() {
             : 'One accepted submission beats a very good excuse.'}
         </p>
       </div>
-      </div>
+      <section className="plaque p-6">
+        <div className="section-heading">
+          <h2>The crew</h2>
+          <span className="hud-label">
+            {crew.filter((p) => p.standing.status === 'clear').length} of {crew.length} clear
+          </span>
+        </div>
+        {crew.length <= 1 ? (
+          <Invite />
+        ) : (
+          <ul>
+            {crew.map(({ player, standing, at }) => (
+              <li className="crew-row" key={player.id}>
+                <span className="avatar" aria-hidden>
+                  {player.displayName[0]}
+                </span>
+                <div className="crew-name">
+                  <strong>{player.displayName}</strong>
+                  {standing.requirement.powerup && (
+                    <span className="ice">{POWERUPS[standing.requirement.powerup.kind].label}</span>
+                  )}
+                  {standing.status === 'clear' && <small>{time(at)}</small>}
+                </div>
+                <span className="score">
+                  {standing.progress.done}/{standing.progress.needed}
+                </span>
+                <span
+                  className={`chip ${standing.status === 'clear' ? 'safe' : standing.requirement.powerup ? 'ice' : 'danger'}`}
+                >
+                  {standing.status === 'clear'
+                    ? 'Clear'
+                    : standing.requirement.powerup
+                      ? 'Powerup'
+                      : 'Still out'}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      <section>
+        <div className="section-heading">
+          <h2>Proofs</h2>
+          <span className="hud-label">{action.posted ? 'Cards up' : 'Face down'}</span>
+        </div>
+        {!action.posted ? (
+          <>
+            <p>Post yours to flip these</p>
+            <div className="proof-grid">
+              {[0, 1].map((i) => (
+                <div key={i} className="face-down" aria-hidden>
+                  ♠
+                </div>
+              ))}
+            </div>
+          </>
+        ) : !feed.length ? (
+          <p>No proofs yet. Yours can start the table.</p>
+        ) : (
+          <div className="proof-grid">
+            {feed.map((a) => (
+              <article className="plaque proof" key={a.id}>
+                <header>
+                  <strong>{name(a.playerId)}</strong>
+                  <small>{time(a.lcTimestamp)}</small>
+                </header>
+                <img src={a.photo} alt={`${name(a.playerId)}'s proof, ${time(a.lcTimestamp)}`} />
+                <p>{a.caption}</p>
+                <div className="reactions">
+                  {['🔥', '💀', '👑'].map((emoji) => (
+                    <button
+                      aria-label={`React ${emoji}`}
+                      aria-pressed={a.reactions[emoji]?.includes(s.meId) ?? false}
+                      key={emoji}
+                      onClick={() => void s.react(a.id, emoji)}
+                    >
+                      {emoji} {a.reactions[emoji]?.length || ''}
+                    </button>
+                  ))}
+                </div>
+                {a.comments.map((c) => (
+                  <p key={c.id}>
+                    <b>{name(c.playerId)}</b> {c.body}
+                  </p>
+                ))}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    if (drafts[a.id]?.trim()) {
+                      void s.comment(a.id, drafts[a.id].trim())
+                      setDrafts({ ...drafts, [a.id]: '' })
+                    }
+                  }}
+                >
+                  <input
+                    aria-label={`Comment on ${name(a.playerId)}'s proof`}
+                    placeholder="Say something"
+                    maxLength={90}
+                    value={drafts[a.id] ?? ''}
+                    onChange={(e) => setDrafts({ ...drafts, [a.id]: e.target.value })}
+                  />
+                  <button>Send</button>
+                </form>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
   )
 }
