@@ -149,3 +149,101 @@ Deno.serve(async (req) => {
     return json({ error: err instanceof Error ? err.message : 'upstream failure' }, 502)
   }
 })
+
+async function todayFor(
+  req: Request,
+  opts: { write: boolean; caption?: string; photoPath?: string },
+): Promise<Response> {
+  const userId = await callerId(req)
+  if (!userId) return json({ error: 'not signed in' }, 401)
+
+  const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+
+  const { data: profile } = await db
+    .from('profiles')
+    .select('leetcode_username')
+    .eq('id', userId)
+    .maybeSingle()
+  if (!profile?.leetcode_username) return json({ error: 'no LeetCode handle on your profile' }, 400)
+
+  const { data: membership } = await db
+    .from('memberships')
+    .select('table_id, tables_(id, tz)')
+    .eq('profile_id', userId)
+    .order('joined_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+  const table = membership?.tables_ as { id: string; tz: string } | undefined
+  if (!table) return json({ error: 'you are not at a table' }, 400)
+
+  const today = localDayKey(new Date(), table.tz)
+  const from = dayStartUnix(today, table.tz)
+  const to = dayEndUnix(today, table.tz)
+
+  let recent: Awaited<ReturnType<typeof fetchRecentAccepted>>
+  try {
+    recent = await fetchRecentAccepted(profile.leetcode_username)
+  } catch (err) {
+    if (isNoSuchUser(err)) return json({ ...NO_USER, handle: profile.leetcode_username }, 404)
+    throw err
+  }
+  if (!recent) return json({ ...NO_USER, handle: profile.leetcode_username }, 404)
+
+  const { solved, truncated } = within(recent.all, from, to, recent.limit)
+  if (solved.length === 0) {
+    return json({
+      recorded: [],
+      found: [],
+      reason: 'nothing-today',
+      handle: profile.leetcode_username,
+      today,
+    })
+  }
+
+  const [difficulties, daily] = await Promise.all([
+    fetchDifficulties(solved.map((s) => s.slug)),
+    fetchDaily().catch(() => null),
+  ])
+
+  const found = solved.map((s) => ({
+    slug: s.slug,
+    title: s.title,
+    difficulty: difficulties.get(s.slug) ?? null,
+    at: s.at,
+    isDaily: daily ? s.slug === daily.slug : false,
+  }))
+
+  if (!opts.write) {
+    return json({ recorded: [], found, today, handle: profile.leetcode_username, truncated })
+  }
+
+  const caption = opts.caption?.trim().slice(0, 80) || null
+  const rows = solved.map((s, i) => ({
+    table_id: table.id,
+    profile_id: userId,
+    day_date: today,
+    status: 'verified',
+    lc_slug: s.slug,
+    lc_title: s.title,
+    lc_difficulty: difficulties.get(s.slug) ?? null,
+    lc_timestamp: s.at,
+    is_daily: daily ? s.slug === daily.slug : false,
+
+    ...(opts.photoPath && i === 0 ? { photo_path: opts.photoPath, caption } : {}),
+    verified_at: new Date().toISOString(),
+  }))
+
+  const { data: written, error } = await db
+    .from('antes')
+    .upsert(rows, { onConflict: 'table_id,profile_id,day_date,lc_slug' })
+    .select('id, lc_slug, lc_title, lc_difficulty, lc_timestamp, is_daily')
+  if (error) return json({ error: error.message }, 500)
+
+  return json({
+    recorded: written ?? [],
+    found,
+    today,
+    handle: profile.leetcode_username,
+    truncated,
+  })
+}
