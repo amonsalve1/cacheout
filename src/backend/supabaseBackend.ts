@@ -386,5 +386,114 @@ export function createSupabaseBackend(db: SupabaseClient): Backend {
       }
       return recordAnte({ caption: draft.caption, photoPath })
     },
+
+    async pay(to, cents) {
+      const from = await requireUser()
+      const { error } = await db
+        .from('payments')
+        .insert({ table_id: await resolveTable(from), from_profile: from, to_profile: to, cents })
+      if (error) throw new Error(readable(error))
+    },
+    async confirmPayment(id) {
+      const { error } = await db
+        .from('payments')
+        .update({ confirmed_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('to_profile', await requireUser())
+        .is('confirmed_at', null)
+      if (error) throw new Error(readable(error))
+    },
+    async playPowerup(targetId: string, kind: PowerupKind) {
+      const userId = await requireUser()
+      const id = await resolveTable(userId)
+      const { data: t } = await db.from('tables_').select('tz').eq('id', id).single()
+
+      const { error } = await db.from('powerups').insert({
+        table_id: id,
+        kind,
+        from_id: userId,
+        target_id: targetId,
+        played_on: localDayKey(new Date(), String(t?.tz ?? 'UTC')),
+      })
+      if (error) throw new Error(readable(error))
+    },
+
+    async react(anteId: string, emoji: string) {
+      const userId = await requireUser()
+      const { data: existing } = await db
+        .from('reactions')
+        .select('emoji')
+        .eq('ante_id', anteId)
+        .eq('profile_id', userId)
+        .eq('emoji', emoji)
+        .maybeSingle()
+      if (existing) {
+        await db
+          .from('reactions')
+          .delete()
+          .eq('ante_id', anteId)
+          .eq('profile_id', userId)
+          .eq('emoji', emoji)
+      } else {
+        await db.from('reactions').insert({ ante_id: anteId, profile_id: userId, emoji })
+      }
+    },
+
+    async comment(anteId: string, body: string) {
+      const userId = await requireUser()
+      await db.from('comments').insert({ ante_id: anteId, profile_id: userId, body })
+    },
+
+    async updateProfile(patch) {
+      const userId = await requireUser()
+      const { error } = await db
+        .from('profiles')
+        .update({
+          ...(patch.venmoHandle !== undefined
+            ? { venmo_handle: patch.venmoHandle.trim() || null }
+            : {}),
+          ...(patch.displayName !== undefined ? { display_name: patch.displayName.trim() } : {}),
+          ...(patch.leetcodeUsername !== undefined
+            ? { leetcode_username: patch.leetcodeUsername.trim() }
+            : {}),
+        })
+        .eq('id', userId)
+      if (error) return { ok: false as const, message: readable(error) }
+      return { ok: true as const }
+    },
+
+    async updateTable(patch) {
+      new Intl.DateTimeFormat('en', { timeZone: patch.tz })
+      const { error } = await db
+        .from('tables_')
+        .update({
+          name: patch.name,
+          tz: patch.tz,
+          discord_webhook_url: patch.discordWebhookUrl || null,
+        })
+        .eq('id', await resolveTable(await requireUser()))
+      if (error) throw new Error(readable(error))
+    },
+    async joinByCode(code: string) {
+      const { data, error } = await db.rpc('join_table_by_code', { code })
+      if (error) return { ok: false as const, message: 'No table with that code' }
+      tableId = String(data)
+      return { ok: true as const }
+    },
+
+    subscribe(onChange: () => void) {
+      const channel = db
+        .channel('table-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, onChange)
+
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'antes' }, onChange)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'powerups' }, onChange)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'markers' }, onChange)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'memberships' }, onChange)
+        .subscribe()
+      return () => {
+        void db.removeChannel(channel)
+      }
+    },
   }
 }
