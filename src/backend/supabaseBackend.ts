@@ -191,5 +191,200 @@ export function createSupabaseBackend(db: SupabaseClient): Backend {
         leetcodeUsername: String(profile.leetcode_username),
       }
     },
+
+    async signIn({ email, displayName, leetcodeUsername }): Promise<SignInResult> {
+      try {
+        const { data: session } = await db.auth.getUser()
+
+        if (session.user) {
+          const { error } = await db.from('profiles').upsert({
+            id: session.user.id,
+            display_name: displayName.trim().toUpperCase().slice(0, 14),
+            leetcode_username: leetcodeUsername.trim(),
+          })
+          if (error) return { ok: false, message: readable(error) }
+          await resolveTable(session.user.id)
+          return {
+            ok: true,
+            identity: {
+              playerId: session.user.id,
+              displayName: displayName.trim().toUpperCase(),
+              leetcodeUsername: leetcodeUsername.trim(),
+            },
+          }
+        }
+
+        const checked = await checkProfile(leetcodeUsername.trim())
+        if (!checked.ok) return { ok: false, message: checked.message }
+        if (!email?.trim()) return { ok: false, message: 'Email required to sign in' }
+
+        const invite = joinCodeFromUrl()
+        if (invite) rememberInvite(invite)
+
+        const { error } = await db.auth.signInWithOtp({
+          email: email.trim(),
+          options: {
+            emailRedirectTo: invite ? inviteLink(invite) : window.location.origin,
+            data: { display_name: displayName.trim(), leetcode_username: leetcodeUsername.trim() },
+          },
+        })
+        if (error) return { ok: false, message: readable(error) }
+        return { ok: 'pending', message: `Check ${email.trim()} for a sign-in link.` }
+      } catch (err) {
+        return { ok: false, message: readable(err) }
+      }
+    },
+
+    async signOut() {
+      tableId = null
+      await db.auth.signOut()
+    },
+
+    async load(): Promise<Snapshot> {
+      const userId = await requireUser()
+      const id = await resolveTable(userId)
+
+      const [tableRes, memberRes, anteRes, powerRes, markerRes, paymentRes] = await Promise.all([
+        db.from('tables_').select('*').eq('id', id).single(),
+        db.from('memberships').select('profile_id, joined_at, profiles(*)').eq('table_id', id),
+        db.from('antes').select('*').eq('table_id', id),
+        db.from('powerups').select('*').eq('table_id', id),
+        db.from('markers').select('*').eq('table_id', id),
+        db.from('payments').select('*').eq('table_id', id),
+      ])
+      if (tableRes.error) throw new Error(readable(tableRes.error))
+
+      if (paymentRes.error) throw new Error(readable(paymentRes.error))
+      const t = tableRes.data
+      const tz = String(t.tz)
+      const today = localDayKey(new Date(), tz)
+
+      const anteIds = (anteRes.data ?? []).map((a) => String(a.id))
+      const [reactionRes, commentRes] = await Promise.all([
+        anteIds.length ? db.from('reactions').select('*').in('ante_id', anteIds) : { data: [] },
+        anteIds.length ? db.from('comments').select('*').in('ante_id', anteIds) : { data: [] },
+      ])
+
+      const reactionsByAnte = new Map<string, Ante['reactions']>()
+      for (const r of (reactionRes.data ?? []) as Row[]) {
+        const key = String(r.ante_id)
+        const bucket = reactionsByAnte.get(key) ?? {}
+        const emoji = String(r.emoji)
+        bucket[emoji] = [...(bucket[emoji] ?? []), String(r.profile_id)]
+        reactionsByAnte.set(key, bucket)
+      }
+
+      const commentsByAnte = new Map<string, Ante['comments']>()
+      for (const c of (commentRes.data ?? []) as Row[]) {
+        const key = String(c.ante_id)
+        commentsByAnte.set(key, [
+          ...(commentsByAnte.get(key) ?? []),
+          {
+            id: String(c.id),
+            playerId: String(c.profile_id),
+            body: String(c.body),
+            createdAt: String(c.created_at),
+          },
+        ])
+      }
+
+      const signedProofs = await signProofs(
+        (anteRes.data ?? []).map((a) => String((a as Row).photo_path ?? '')).filter(Boolean),
+      )
+
+      const players: Player[] = (memberRes.data ?? []).map((row, i) => {
+        const m = row as unknown as Row
+        const p = (Array.isArray(m.profiles) ? m.profiles[0] : m.profiles) as Row
+        return {
+          id: String(p.id),
+          displayName: String(p.display_name),
+          leetcodeUsername: String(p.leetcode_username),
+          suit: (p.suit as Suit) ?? SUITS[i % SUITS.length],
+          chips: 0,
+          lifetimeSolved: Number(p.lifetime_solved ?? 0),
+          usernameLockedUntil: (p.username_locked_until as string) ?? undefined,
+          venmoHandle: (p.venmo_handle as string) ?? undefined,
+          joinedAt: String(m.joined_at ?? today),
+        }
+      })
+
+      const daily = await fetchDaily()
+
+      return {
+        table: {
+          id: String(t.id),
+          name: String(t.name),
+          discordWebhookUrl: t.discord_webhook_url ?? undefined,
+          joinCode: String(t.join_code),
+          buyInCents: 100,
+          tz,
+          doubleOrNothingEnabled: false,
+          rakeBps: 0,
+        },
+        players,
+        meId: userId,
+        today,
+        daily: daily.ok
+          ? {
+              date: daily.date,
+              slug: daily.slug,
+              title: daily.title,
+              difficulty: daily.difficulty,
+              link: daily.link,
+            }
+          : {
+              date: today,
+              slug: '',
+              title: 'Daily unavailable',
+              difficulty: 'Medium',
+              link: '/problemset/',
+            },
+        antes: (anteRes.data ?? []).map((a) =>
+          asAnte(
+            a as Row,
+            reactionsByAnte.get(String(a.id)) ?? {},
+            commentsByAnte.get(String(a.id)) ?? [],
+            signedProofs,
+          ),
+        ),
+        payments: (paymentRes.data ?? []).map((p) => ({
+          id: String(p.id),
+          from: String(p.from_profile),
+          to: String(p.to_profile),
+          cents: Number(p.cents),
+          createdAt: String(p.created_at),
+          confirmedAt: p.confirmed_at ? String(p.confirmed_at) : undefined,
+        })),
+        markers: (markerRes.data ?? []).map((m): Marker => ({
+          id: String(m.id),
+          debtorId: String(m.debtor_id),
+          creditorId: String(m.creditor_id),
+          cents: Number(m.cents),
+          reason: String(m.reason),
+          dayDate: String(m.day_date),
+          settledIn: (m.settled_in as string) ?? undefined,
+        })),
+        powerups: (powerRes.data ?? []).map((p): Powerup => ({
+          id: String(p.id),
+          kind: p.kind as PowerupKind,
+          fromId: String(p.from_id),
+          targetId: String(p.target_id),
+          playedOn: String(p.played_on),
+          clearedOn: (p.cleared_on as string) ?? undefined,
+        })),
+        lastSweptDay: String(t.last_swept_day),
+      }
+    },
+
+    checkToday,
+
+    async submitAnte(draft: AnteDraft) {
+      let photoPath: string | undefined
+      if (draft.photo) {
+        const userId = await requireUser()
+        photoPath = await uploadProof(draft.photo, userId, await resolveTable(userId))
+      }
+      return recordAnte({ caption: draft.caption, photoPath })
+    },
   }
 }
