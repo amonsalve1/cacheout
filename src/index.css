@@ -1,0 +1,13 @@
+@import 'tailwindcss';
+@import '@fontsource/press-start-2p/400.css';
+@import '@fontsource-variable/pixelify-sans/index.css';
+@import '@fontsource-variable/chivo/index.css';
+@import './styles/palette.css';
+@import './styles/hud.css';
+@theme {
+  --font-display: 'Press Start 2P', monospace;
+  --font-body: 'Chivo Variable', sans-serif;
+  --font-hud: 'Chivo Variable', sans-serif;
+  --font-pixel: 'Pixelify Sans Variable', sans-serif;
+  --font-num: 'Pixelify Sans Variable', sans-serif;
+}
