@@ -1,0 +1,190 @@
+:root {
+  color-scheme: dark;
+  --accent: #ffb020;
+  --accent-lt: #ffe680;
+  --ink-1: #ffffff;
+  --ink-2: #c2b8d4;
+  --ink-3: #a698bb;
+  --surface: #241734;
+  --edge: #5b4478;
+  --edge-soft: #3d2a52;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--co-ink);
+  color: var(--ink-1);
+  font:
+    16px/1.5 'Chivo Variable',
+    sans-serif;
+}
+button,
+input,
+a,
+summary {
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button,
+.hud-ghost,
+.hud-action {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 2px solid var(--edge);
+  border-radius: 4px;
+  background: var(--co-dusk);
+  color: var(--ink-1);
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--co-void);
+  transition:
+    transform 150ms,
+    box-shadow 150ms;
+}
+button:active,
+.hud-ghost:active,
+.hud-action:active {
+  transform: translateY(4px);
+  box-shadow: none;
+}
+button:disabled {
+  cursor: default;
+  color: var(--ink-2);
+  box-shadow: none;
+}
+button:disabled:not(.clear-button) {
+  background: var(--co-velvet);
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+summary:focus-visible {
+  outline: 3px solid var(--co-ice);
+  outline-offset: 4px;
+}
+input {
+  min-height: 44px;
+  width: 100%;
+  min-width: 0;
+  border: 2px solid var(--edge);
+  border-radius: 4px;
+  background: var(--co-ink);
+  color: var(--ink-1);
+  padding: 8px 12px;
+}
+label {
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+}
+input::placeholder {
+  color: var(--ink-3);
+}
+h1,
+h2,
+.panel-title,
+.hud-value,
+.score,
+.clock,
+.progress-number {
+  font-family: 'Pixelify Sans Variable', sans-serif;
+  font-weight: 500;
+}
+h1 {
+  font-size: 28px;
+  line-height: 1.2;
+  margin: 8px 0 16px;
+}
+h2,
+.panel-title {
+  font-size: 20px;
+  line-height: 1.3;
+  margin: 0 0 16px;
+}
+p {
+  margin: 8px 0;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+small {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.hud-label {
+  font:
+    600 12px/1.5 'Chivo Variable',
+    sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-2);
+}
+.hud-body,
+.hud-name,
+.hud-num {
+  font-family: 'Chivo Variable', sans-serif;
+}
+.plaque {
+  background-color: rgba(36, 23, 52, 1);
+  border: 2px solid var(--edge);
+  border-radius: 4px;
+  box-shadow: 4px 4px 0 var(--co-void);
+}
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.hud-action {
+  background: var(--co-gold);
+  border-color: var(--co-gold-lt);
+  color: var(--co-ink);
+  font-weight: 600;
+  text-align: center;
+}
+.hud-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.safe {
+  color: var(--co-mint);
+}
+.danger {
+  color: var(--co-chip-red-lt);
+}
+.ice {
+  color: var(--co-ice);
+}
+.chip,
+.hud-tag {
+  display: inline-block;
+  border: 1px solid currentColor;
+  border-radius: 20px;
+  padding: 4px 8px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.wordmark {
+  font:
+    12px/1.5 'Press Start 2P',
+    monospace;
+  color: var(--co-gold-lt);
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+}
