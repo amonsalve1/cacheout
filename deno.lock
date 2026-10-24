@@ -1,0 +1,32 @@
+{
+  "version": "5",
+  "redirects": {
+    "https://esm.sh/@supabase/supabase-js@2": "https://esm.sh/@supabase/supabase-js@2.116.0"
+  },
+  "remote": {
+    "https://esm.sh/@supabase/supabase-js@2.116.0": "a38014743786a06c7dbf095a99e9ef3b38c0ec16bff076fc7cd403991192b34e"
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:@fontsource-variable/chivo@^5.3.0",
+        "npm:@fontsource-variable/pixelify-sans@^5.3.0",
+        "npm:@fontsource/press-start-2p@^5.3.0",
+        "npm:@supabase/supabase-js@^2.115.0",
+        "npm:@tailwindcss/vite@^4.3.3",
+        "npm:@types/node@^26.4.0",
+        "npm:@types/react-dom@^19.2.5",
+        "npm:@types/react@^19.2.18",
+        "npm:@vitejs/plugin-react@^6.1.1",
+        "npm:oxlint@^1.80.0",
+        "npm:react-dom@^19.2.8",
+        "npm:react@^19.2.8",
+        "npm:tailwindcss@^4.3.3",
+        "npm:typescript@^7.0.2",
+        "npm:vite@^8.2.2",
+        "npm:vitest@^4.1.11",
+        "npm:zustand@^5.0.15"
+      ]
+    }
+  }
+}
