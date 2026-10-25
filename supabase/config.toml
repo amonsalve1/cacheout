@@ -1,0 +1,7 @@
+project_id = "cache-out"
+
+[functions.sweep]
+verify_jwt = false
+
+[functions.leetcode]
+verify_jwt = false
