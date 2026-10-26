@@ -621,3 +621,170 @@ async function settle(): Promise<void> {
   save('settle', art, svg, 'Settle up: nine debts between five players net down to three payments')
 }
 
+async function tracer(): Promise<void> {
+  const art = new Art(LW, 138)
+  const svg = new Svg()
+  header(art, svg, [['every sprite is ', CREAM], ['ray traced', P['pink-lt']], ['.', CREAM]], 'A ZERO-DEPENDENCY RENDERER IN TOOLS/PIXELTRACER')
+  const N = 40
+  const base = { ...defaultRenderOpts(CACHE_OUT), width: N, height: N, upscale: 1 }
+  const scene = cherry(1)
+  const raw = renderRaw(scene, { ...base, ssaa: 3 })
+  const snap = pixelize(raw, { ...base, dither: 'none' })
+  const dith = pixelize(raw, base)
+  const tiles: [Img, string, string][] = [
+    [raw, 'trace', 'rays, lambert, specular'],
+    [snap, 'snap', '32 colours in oklab'],
+    [dith, 'dither', 'bayer 4×4 ordered'],
+    [cropImg(dith, 11, 11, 22, 22), 'upscale', 'nearest neighbour, 8× preview'],
+  ]
+  const tw = 46
+  tiles.forEach(([img, a, b], i) => {
+    const x = 12 + i * 60
+    const y = 40
+    art.box(x, y, tw, tw, { face: '#160d22', edge: P.void, hi: P.dusk })
+    const scaled = scaleImg(img, i === 3 ? 2 : 1)
+    art.blit(scaled, x + Math.floor((tw - scaled.width) / 2), y + Math.floor((tw - scaled.height) / 2))
+    if (i < 3) {
+      art.dots([[x + tw + 3, y + tw / 2], [x + 57, y + tw / 2]], P['chrome-dim'], 2)
+      art.arrow(x + 59, y + tw / 2, P['chrome-dim'])
+    }
+    svg.text(x + tw / 2, y + tw + 8, `${i + 1}  ${a}`, { font: 'sans', size: 15, weight: 700, fill: CREAM, anchor: 'middle' })
+    svg.text(x + tw / 2, y + tw + 13, b, { font: 'mono', size: 12, fill: MUTE, anchor: 'middle' })
+  })
+  const sw = CACHE_OUT.entries
+  const sx = 12
+  const sy = 112
+  const each = Math.floor(226 / sw.length)
+  sw.forEach((e, i) => {
+    art.rect(sx + i * each, sy, each - 1, 6, e.hex)
+  })
+  art.rect(sx - 1, sy - 1, each * sw.length + 1, 8, P.void, 0)
+  svg.text(12, sy + 14, 'one palette feeds the sprites, the css variables and these graphics.', { font: 'sans', size: 13, fill: SOFT })
+  svg.text(238, sy + 14, 'node:test · own png codec · byte-identical', { font: 'mono', size: 12, fill: MUTE, anchor: 'end' })
+  save('tracer', art, svg, 'The sprite pipeline: trace a scene, snap to a 32 colour palette in OKLab, ordered dither, nearest neighbour upscale')
+}
+
+function cropImg(img: Img, x: number, y: number, w: number, h: number): Img {
+  const out = new Uint8Array(w * h * 4)
+  for (let r = 0; r < h; r++) out.set(img.data.subarray(((y + r) * img.width + x) * 4, ((y + r) * img.width + x + w) * 4), r * w * 4)
+  return { data: out, width: w, height: h }
+}
+
+function scaleImg(img: Img, k: number): Img {
+  const w = img.width * k
+  const h = img.height * k
+  const out = new Uint8Array(w * h * 4)
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const s = (((y / k) | 0) * img.width + ((x / k) | 0)) * 4
+      out.set(img.data.subarray(s, s + 4), (y * w + x) * 4)
+    }
+  return { data: out, width: w, height: h }
+}
+
+function techChip(art: Art, svg: Svg, cx: number, cy: number, face: string, dark: string, glyph: string, name: string, sub: string, ink = P.white): void {
+  art.ellipse(cx + 1, cy + 2, 11, 11, P.void)
+  art.disc(cx, cy, 11, dark)
+  art.disc(cx, cy - 1, 11, face)
+  for (let k = 0; k < 8; k++) {
+    const a = (k / 8) * Math.PI * 2 + 0.2
+    const px = cx + Math.round(Math.cos(a) * 9.5)
+    const py = cy - 1 + Math.round(Math.sin(a) * 9.5)
+    art.rect(px - 1, py - 1, 2, 2, P.white)
+  }
+  art.disc(cx, cy - 1, 7, dark)
+  art.disc(cx, cy - 1, 6, face)
+  svg.text(cx, cy + 1.6, glyph, { font: 'pixel', size: glyph.length > 2 ? 10 : 12, fill: ink, anchor: 'middle' })
+  svg.text(cx, cy + 18, name, { font: 'sans', size: 14, weight: 700, fill: CREAM, anchor: 'middle' })
+  svg.text(cx, cy + 23, sub, { font: 'mono', size: 11, fill: MUTE, anchor: 'middle' })
+}
+
+function languages(): { name: string; lines: number; color: string }[] {
+  const map: Record<string, [string, string]> = {
+    '.ts': ['TypeScript', '#3178c6'],
+    '.tsx': ['TypeScript', '#3178c6'],
+    '.mjs': ['JavaScript', '#f1e05a'],
+    '.css': ['CSS', '#a855f7'],
+    '.sql': ['SQL', '#ff7a1a'],
+    '.html': ['HTML', '#e34c26'],
+  }
+  const totals = new Map<string, { lines: number; color: string }>()
+  const walk = (dir: string) => {
+    for (const f of readdirSync(dir)) {
+      if (['node_modules', 'dist', '.git', 'docs', 'out'].includes(f)) continue
+      const p = join(dir, f)
+      if (statSync(p).isDirectory()) walk(p)
+      else {
+        const m = map[extname(f)]
+        if (!m) continue
+        const n = readFileSync(p, 'utf8').split('\n').length
+        const t = totals.get(m[0]) ?? { lines: 0, color: m[1] }
+        t.lines += n
+        totals.set(m[0], t)
+      }
+    }
+  }
+  for (const d of ['src', 'supabase', 'tools', 'scripts']) walk(resolve(ROOT, d))
+  totals.set('HTML', { lines: readFileSync(resolve(ROOT, 'index.html'), 'utf8').split('\n').length, color: '#e34c26' })
+  return [...totals].map(([name, v]) => ({ name, ...v })).sort((a, b) => b.lines - a.lines)
+}
+
+async function techStack(): Promise<void> {
+  const art = new Art(LW, 176)
+  const svg = new Svg()
+  header(art, svg, [['the ', CREAM], ['stack', P.gold], ['.', CREAM]], 'EVERYTHING THAT RUNS CACHE OUT')
+  const rows: [string, [string, string, string, string, string, string?][]][] = [
+    ['client', [
+      ['#3178c6', '#1d4f8a', 'TS', 'TypeScript', 'strict'],
+      ['#61dafb', '#2a8fb0', 'R', 'React 19', 'ui', P.ink],
+      ['#a855f7', '#6b00d1', 'V', 'Vite 8', 'build'],
+      ['#38bdf8', '#0a5c9e', 'TW', 'Tailwind 4', 'styles', P.ink],
+      ['#c2884a', '#7a4f22', 'Z', 'zustand', 'state'],
+    ]],
+    ['server', [
+      ['#3ecf8e', '#1c8a58', 'SB', 'Supabase', 'auth · realtime', P.ink],
+      ['#336791', '#1c3d5a', 'PG', 'Postgres', 'rls · triggers'],
+      ['#f2f2f2', '#9a9a9a', 'D', 'Deno', 'edge functions', P.ink],
+      ['#ffb020', '#a06a00', 'CR', 'pg_cron', 'hourly sweep', P.ink],
+      ['#ff7a1a', '#d13800', 'LC', 'LeetCode', 'graphql api', P.ink],
+    ]],
+    ['tooling', [
+      ['#729b1b', '#3f5a0b', 'VT', 'Vitest', 'app tests'],
+      ['#ff2d95', '#a8006b', 'PX', 'pixeltracer', 'sprites'],
+      ['#e8e8e8', '#8b7aa8', 'OX', 'oxlint', 'lint', P.ink],
+      ['#11081c', '#3d2a52', 'VC', 'Vercel', 'hosting'],
+      ['#ffffff', '#c2b8d4', 'NT', 'node:test', 'renderer tests', P.ink],
+    ]],
+  ]
+  rows.forEach(([label, chips], r) => {
+    const cy = 48 + r * 36
+    art.rect(12, cy - 13, 1, 26, P.dusk)
+    svg.text(16, cy + 1.5, label, { font: 'mono5', size: 13, fill: MUTE, track: 2 })
+    chips.forEach(([face, dark, glyph, name, sub, ink], i) => {
+      techChip(art, svg, 70 + i * 40, cy, face, dark, glyph, name, sub, ink)
+    })
+  })
+  const langs = languages()
+  const total = langs.reduce((s, l) => s + l.lines, 0)
+  const by = 156
+  let x = 12
+  const bw = 226
+  art.rect(11, by - 1, bw + 2, 7, P.void)
+  langs.forEach((l, i) => {
+    const w = i === langs.length - 1 ? 12 + bw - x : Math.max(1, Math.round((l.lines / total) * bw))
+    art.rect(x, by, w, 5, l.color)
+    art.hline(x, by, w, '#ffffff')
+    art.rect(x, by, w, 1, l.color, 0.6)
+    x += w
+  })
+  let lx = 12
+  langs.forEach((l) => {
+    const pct = ((l.lines / total) * 100).toFixed(1)
+    art.rect(lx, by + 10, 3, 3, l.color)
+    svg.text(lx + 5, by + 13, `${l.name} ${pct}%`, { font: 'mono', size: 12, fill: SOFT })
+    lx += (l.name.length + pct.length + 3) * 2.3 + 10
+  })
+  svg.text(238, by + 13, `${total.toLocaleString('en-US')} lines`, { font: 'mono5', size: 12, fill: MUTE, anchor: 'end' })
+  save('stack', art, svg, `Tech stack: TypeScript, React, Vite, Tailwind, zustand, Supabase, Postgres, Deno, pg_cron, Vitest, Vercel`)
+}
+
