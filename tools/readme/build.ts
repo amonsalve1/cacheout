@@ -788,3 +788,21 @@ async function techStack(): Promise<void> {
   save('stack', art, svg, `Tech stack: TypeScript, React, Vite, Tailwind, zustand, Supabase, Postgres, Deno, pg_cron, Vitest, Vercel`)
 }
 
+async function main(): Promise<void> {
+  mkdirSync(OUT, { recursive: true })
+  const all: Record<string, () => Promise<void>> = {
+    banner,
+    'one-rule': oneRule,
+    'a-day': day,
+    'it-checks': verify,
+    sweep,
+    data,
+    settle,
+    tracer,
+    stack: techStack,
+  }
+  const only = process.argv.slice(2)
+  for (const [n, fn] of Object.entries(all)) if (only.length === 0 || only.includes(n)) await fn()
+}
+
+await main()
