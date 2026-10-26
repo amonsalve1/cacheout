@@ -24,7 +24,8 @@
     "check:shared": "node scripts/sync-shared.mjs --check",
     "verify": "npm run typecheck && npm run lint && npm run check:shared && npm test && npm run trace:test && npm run trace:verify",
     "check:functions": "npx --yes deno@2 check supabase/functions/leetcode/index.ts supabase/functions/sweep/index.ts",
-    "icons": "node tools/pixeltracer/icons.ts"
+    "icons": "node tools/pixeltracer/icons.ts",
+    "readme": "node tools/readme/build.ts"
   },
   "dependencies": {
     "@fontsource-variable/chivo": "^5.3.0",
