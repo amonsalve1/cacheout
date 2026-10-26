@@ -17,4 +17,6 @@
 
 The hourly job reads Vault. The private `proofs` bucket and its policies are created by migrations. Verification and settlement run in Edge Functions; the browser cannot write verified solves or markers. Payments affect balances only after the recipient confirms.
 
+Antes are server-written only: migration `0009_server_only_antes.sql` removes client inserts, and the `leetcode` function attaches photos and captions to the caller's verified ante.
+
 Discord webhooks are optional and configured in the profile sheet. Notification claims prevent duplicate posts during concurrent runs. A crash after claiming a notification can lose that message; check function logs for failed webhook requests.
