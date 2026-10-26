@@ -479,3 +479,145 @@ function file(art: Art, x: number, y: number, c: string): void {
   })
 }
 
+async function sweep(): Promise<void> {
+  const art = new Art(LW, 140)
+  const svg = new Svg()
+  header(art, svg, [['the ', CREAM], ['sweep', P.gold], ['.', CREAM]], 'HOW A DAY GETS SETTLED WITH NOBODY ONLINE')
+  const y = 44
+  clock(art, 30, y + 18)
+  rack(art, 66, y + 2, 36, 32, P.gold)
+  art.dots([[44, y + 18], [60, y + 18]], P['chrome-dim'], 2)
+  art.arrow(62, y + 18, P['chrome-dim'])
+  tzCard(art, svg, 120, y - 2, 'america/new_york', 'settle', true)
+  tzCard(art, svg, 120, y + 13, 'america/los_angeles', '9:07p', false)
+  tzCard(art, svg, 120, y + 28, 'europe/london', 'settle', true)
+  for (const yy of [y + 4, y + 19, y + 34]) {
+    art.dots([[104, y + 18], [110, y + 18], [110, yy], [115, yy]], P['chrome-dim'], 2)
+    art.arrow(117, yy, P['chrome-dim'])
+  }
+  ledger(art, 206, y)
+  art.dots([[188, y + 4], [200, y + 4]], P.mint, 2)
+  art.arrow(202, y + 4, P.mint)
+  art.dots([[188, y + 34], [196, y + 34], [196, y + 10], [200, y + 10]], P.mint, 2)
+
+  svg.text(30, y + 41, 'pg_cron', { font: 'sans', size: 15, weight: 700, fill: CREAM, anchor: 'middle' })
+  svg.text(30, y + 46, "'7 * * * *'", { font: 'mono', size: 12, fill: MUTE, anchor: 'middle' })
+  svg.text(84, y + 41, 'sweep', { font: 'sans', size: 15, weight: 700, fill: CREAM, anchor: 'middle' })
+  svg.text(84, y + 46, 'edge function', { font: 'mono', size: 12, fill: MUTE, anchor: 'middle' })
+  svg.text(153, y + 47, 'has this table hit midnight yet?', { font: 'mono', size: 12, fill: MUTE, anchor: 'middle' })
+  svg.text(221, y + 46, 'markers', { font: 'sans', size: 15, weight: 700, fill: CREAM, anchor: 'middle' })
+
+  const by = 100
+  art.box(12, by, 108, 34, { face: P.ink, edge: P.void, hi: P.dusk })
+  file(art, 18, by + 6, P.ice)
+  file(art, 18, by + 19, P.gold)
+  svg.text(31, by + 11.5, 'src/lib/rules.ts', { font: 'mono', size: 12, fill: CREAM })
+  svg.text(31, by + 24.5, 'functions/_shared/rules.ts', { font: 'mono', size: 12, fill: CREAM })
+  svg.text(31, by + 17.8, 'same code on both sides', { font: 'sans', size: 12, fill: MUTE })
+  svg.text(31, by + 31, 'npm run check:shared fails on drift', { font: 'mono', size: 11, fill: MUTE })
+
+  art.box(130, by, 108, 34, { face: P.ink, edge: P.void, hi: P.dusk })
+  lock(art, 136, by + 6, P.mint)
+  svg.text(146, by + 11.5, 'idempotent', { font: 'sans', size: 14, weight: 700, fill: CREAM })
+  svg.text(146, by + 18.5, 'unique (table, debtor, creditor, day, reason)', { font: 'mono', size: 11, fill: SOFT })
+  svg.text(146, by + 24, 'duplicate markers are ignored.', { font: 'sans', size: 12, fill: MUTE })
+  svg.text(146, by + 29.5, 'today is never swept.', { font: 'sans', size: 12, fill: MUTE })
+  save('sweep', art, svg, 'The sweep: pg_cron runs hourly, the sweep function settles each table whose local day has ended, and writes markers')
+}
+
+function tableCard(art: Art, svg: Svg, x: number, y: number, name: string, cols: string[], accent = P.gold, w = 56): void {
+  const h = 9 + cols.length * 5.5
+  art.box(x, y, w, Math.round(h), { face: P.ink, edge: P.void, hi: P.dusk })
+  art.rect(x + 1, y + 1, w - 2, 7, P.velvet)
+  art.hline(x + 1, y + 8, w - 2, accent)
+  lock(art, x + w - 8, y + 1, accent)
+  svg.text(x + 3, y + 6, name, { font: 'mono5', size: 12.5, fill: CREAM })
+  cols.forEach((c, i) => svg.text(x + 3, y + 13.5 + i * 5.5, c, { font: 'mono', size: 11, fill: MUTE }))
+}
+
+async function data(): Promise<void> {
+  const art = new Art(LW, 156)
+  const svg = new Svg()
+  header(art, svg, [['who can see ', CREAM], ['what', P.mint], ['.', CREAM]], 'ROW LEVEL SECURITY ON EVERY TABLE')
+  const L = 10
+  const M = 97
+  const R = 184
+  const hub = { x: M, y: 64 }
+  const cards: [number, number, string, string[], string?][] = [
+    [L, 40, 'profiles', ['display_name', 'leetcode_username', 'venmo_handle']],
+    [L, 72, 'antes', ['day_date', "status: 'verified'", 'photo_path']],
+    [L, 104, 'storage: proofs', ['<table>/<profile>/', 'signed urls, 1 hour']],
+    [R, 40, 'tables_', ['join_code', 'tz', 'last_swept_day']],
+    [R, 72, 'powerups', ['kind', 'from_id → target_id', 'played_on']],
+    [R, 104, 'markers + payments', ['debtor → creditor', 'confirmed_at']],
+  ]
+  for (const [x, y, , cols] of cards) {
+    const cy = y + 6
+    const fromX = x === L ? x + 56 : x
+    art.dots([[fromX, cy], [x === L ? M - 6 : M + 62, cy], [x === L ? M - 6 : M + 62, hub.y + 10], [x === L ? M : M + 56, hub.y + 10]], P.dusk, 2)
+    void cols
+  }
+  for (const [x, y, n, cols] of cards) tableCard(art, svg, x, y, n, cols)
+  tableCard(art, svg, M, hub.y, 'memberships', ['table_id', 'profile_id'], P.mint)
+  art.box(M, 96, 56, 26, { face: '#120a1c', edge: P.void, hi: P.mint })
+  svg.text(M + 28, 102.5, 'is_member(table_id)', { font: 'mono5', size: 11.5, fill: P.mint, anchor: 'middle' })
+  svg.text(M + 28, 109, 'security definer', { font: 'mono', size: 11, fill: MUTE, anchor: 'middle' })
+  svg.text(M + 28, 115, 'table-scoped reads', { font: 'mono', size: 11, fill: MUTE, anchor: 'middle' })
+  art.dots([[M + 28, 86], [M + 28, 96]], P.mint, 2)
+
+  art.rect(0, 132, LW, 24, P.ink, 0.6)
+  svg.text(12, 141, 'table data is scoped to membership.', { font: 'sans', size: 14, fill: SOFT })
+  svg.text(12, 147.5, 'markers have no insert policy: only the sweep writes the ledger.', { font: 'sans', size: 14, fill: SOFT })
+  svg.text(238, 141, 'invite codes redeem through', { font: 'mono', size: 12, fill: MUTE, anchor: 'end' })
+  svg.text(238, 147.5, 'join_table_by_code()', { font: 'mono5', size: 12, fill: P.mint, anchor: 'end' })
+  save('data', art, svg, 'Data model: membership scopes table data; profiles also allow reading your own row')
+}
+
+async function settle(): Promise<void> {
+  const art = new Art(LW, 128)
+  const svg = new Svg()
+  header(art, svg, [['fewer ', CREAM], ['payments', P.gold], ['.', CREAM]], 'UNPAID DEBTS, NETTED DOWN')
+  const cx = 52
+  const cy = 76
+  const r = 30
+  const ring: [string, Face][] = [['KEVIN', 'money'], ['ANA', 'sad'], ['BO', 'sad'], ['DEE', 'money'], ['YOU', 'money']]
+  const pos = ring.map((_, i) => {
+    const a = -Math.PI / 2 + (i / ring.length) * Math.PI * 2
+    return [Math.round(cx + Math.cos(a) * r), Math.round(cy + Math.sin(a) * r * 0.82)] as [number, number]
+  })
+  const debts: [number, number][] = [[2, 0], [2, 4], [2, 3], [1, 0], [1, 4], [2, 1], [3, 0], [1, 3], [4, 0]]
+  debts.forEach(([a, b], i) => {
+    const [x0, y0] = pos[a]
+    const [x1, y1] = pos[b]
+    const c = [P['chip-red-lt'], P.gold, P.cyan, P.amethyst][i % 4]
+    art.dots([[x0, y0], [x1, y1]], c, 3, i)
+  })
+  ring.forEach(([n, f], i) => {
+    person(art, pos[i][0] - 6, pos[i][1] - 7, CAST[n], f, true)
+    svg.text(pos[i][0], pos[i][1] + 12, n.toLowerCase(), { font: 'mono5', size: 11, fill: MUTE, anchor: 'middle' })
+  })
+  svg.text(cx, 122, '9 unpaid debts', { font: 'mono5', size: 13, fill: MUTE, anchor: 'middle' })
+
+  art.box(104, 66, 30, 14, { face: P.gold, edge: P.void, hi: P['gold-lt'], lo: P.bronze })
+  svg.text(119, 75.6, 'net it', { font: 'mono5', size: 13, fill: P.ink, anchor: 'middle' })
+  art.dots([[96, 73], [102, 73]], P.gold, 2)
+  art.dots([[136, 73], [142, 73]], P.gold, 2)
+  art.arrow(144, 73, P.gold)
+
+  const pays: [string, string, string][] = [['BO', 'KEVIN', '$4'], ['ANA', 'YOU', '$2'], ['ANA', 'DEE', '$1']]
+  pays.forEach(([a, b, amt], i) => {
+    const y = 44 + i * 25
+    art.box(152, y, 88, 20, { face: P.ink, edge: P.void, hi: P.dusk })
+    person(art, 155, y + 3, CAST[a], 'sad', true)
+    art.dots([[170, y + 10], [196, y + 10]], P.gold, 2)
+    art.arrow(198, y + 10, P.gold)
+    person(art, 201, y + 3, CAST[b], 'money', true)
+    svg.text(185, y + 8, amt, { font: 'mono5', size: 14, fill: P['gold-lt'], anchor: 'middle' })
+    svg.text(185, y + 17, `${a.toLowerCase()} → ${b.toLowerCase()}`, { font: 'mono', size: 10.5, fill: MUTE, anchor: 'middle' })
+    art.box(218, y + 6, 18, 8, { face: P.blue, edge: P.void, hi: P.cyan, shadow: false })
+    svg.text(227, y + 11.8, 'venmo', { font: 'mono5', size: 10, fill: P.white, anchor: 'middle' })
+  })
+  svg.text(196, 122, 'net balances, then greedy match: at most n − 1', { font: 'mono5', size: 12, fill: MUTE, anchor: 'middle' })
+  save('settle', art, svg, 'Settle up: nine debts between five players net down to three payments')
+}
+
