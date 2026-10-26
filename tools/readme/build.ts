@@ -342,3 +342,140 @@ function rack(art: Art, x: number, y: number, w: number, h: number, led = P.mint
   }
 }
 
+function cylinder(art: Art, x: number, y: number, w: number, h: number): void {
+  const rx = Math.floor(w / 2)
+  const cx = x + rx
+  art.rect(x, y + 3, w, h - 6, P.blue)
+  art.rect(x, y + 3, 3, h - 6, P.cyan)
+  art.rect(x + w - 4, y + 3, 3, h - 6, P.navy)
+  art.ellipse(cx, y + h - 3, rx, 3, P.blue)
+  for (const yy of [y + 13, y + 23]) {
+    art.ellipse(cx, yy, rx, 3, P.navy)
+    art.ellipse(cx, yy - 1, rx, 3, P.blue)
+  }
+  art.ellipse(cx, y + 3, rx, 3, P.ice)
+  art.ellipse(cx, y + 3, rx - 2, 2, P.cyan)
+}
+
+function lcBox(art: Art, x: number, y: number, w: number, h: number): void {
+  art.box(x, y, w, h, { face: '#1a1220', edge: P.void, hi: P.dusk })
+  art.rect(x + 1, y + 1, w - 2, 5, P.orange)
+  art.rect(x + 3, y + 3, 1, 1, P.ink)
+  art.rect(x + 5, y + 3, 1, 1, P.ink)
+  art.grid(x + w / 2 - 6, y + 11, [
+    '...o......o.',
+    '..oo...y..oo',
+    '.oo...y....oo',
+    'oo...y......oo',
+    '.oo.y......oo',
+    '..ooy.....oo',
+    '...o......o.',
+  ], { o: P.orange, y: P.chrome })
+  art.rect(x + 4, y + h - 8, w - 8, 1, P.dusk)
+  art.rect(x + 4, y + h - 5, w - 14, 1, P.dusk)
+}
+
+function step(art: Art, svg: Svg, x: number, y: number, n: number): void {
+  art.disc(x, y, 4, P.void)
+  art.disc(x, y - 0.5, 4, P.gold)
+  svg.text(x, y + 1.6, String(n), { font: 'mono5', size: 13, fill: P.ink, anchor: 'middle' })
+}
+
+function lock(art: Art, x: number, y: number, c = P.gold): void {
+  art.grid(x, y, ['.ooo.', 'o...o', 'o...o', 'GGGGG', 'GGkGG', 'GGkGG', 'GGGGG'], { o: P['chrome-dim'], G: c, k: P.ink })
+}
+
+async function verify(): Promise<void> {
+  const art = new Art(LW, 166)
+  const svg = new Svg()
+  header(art, svg, [['it checks ', CREAM], ['for you', P.ice], ['.', CREAM]], 'ACCEPTED SUBMISSIONS, CHECKED ON THE SERVER')
+
+  const y = 42
+  phone(art, 16, y)
+  rack(art, 72, y, 40, 38)
+  lcBox(art, 136, y, 40, 38)
+  cylinder(art, 202, y + 1, 30, 36)
+
+  const mid = y + 19
+  art.dots([[42, mid], [66, mid]], P['chrome-dim'], 2)
+  art.arrow(68, mid, P['chrome-dim'])
+  art.dots([[116, mid - 6], [130, mid - 6]], P['chrome-dim'], 2)
+  art.arrow(132, mid - 6, P['chrome-dim'])
+  art.dots([[134, mid + 6], [118, mid + 6]], P['chrome-dim'], 2)
+  art.arrow(116, mid + 6, P['chrome-dim'], 'l')
+  art.dots([[114, y + 42], [114, y + 46], [216, y + 46], [216, y + 42]], P.mint, 2)
+  art.arrow(216, y + 40, P.mint, 'u')
+  step(art, svg, 54, mid - 7, 1)
+  step(art, svg, 92, y - 6, 2)
+  step(art, svg, 124, mid - 13, 3)
+  step(art, svg, 166, y + 46, 4)
+
+  const lab = (cx: number, a: string, b: string) => {
+    svg.text(cx, y + 54, a, { font: 'sans', size: 15, weight: 700, fill: CREAM, anchor: 'middle' })
+    svg.text(cx, y + 59, b, { font: 'mono', size: 12, fill: MUTE, anchor: 'middle' })
+  }
+  lab(27, 'your browser', 'react · supabase-js')
+  lab(92, 'edge function', 'deno · checks your jwt')
+  lab(156, 'leetcode.com', 'public graphql')
+  lab(217, 'postgres', 'antes table')
+
+  const cy = 108
+  art.box(12, cy, 226, 44, { face: '#120a1c', edge: P.void, hi: P.dusk })
+  art.rect(13, cy + 1, 224, 6, P.velvet)
+  for (const [i, c] of [[0, P['chip-red']], [1, P.gold], [2, P.mint]] as [number, string][]) art.rect(17 + i * 5, cy + 3, 2, 2, c)
+  svg.text(232, cy + 5.6, 'supabase/functions/leetcode', { font: 'mono', size: 11, fill: MUTE, anchor: 'end' })
+  const lines: [string, string, string][] = [
+    ['1', 'POST /functions/v1/leetcode', "{ op: 'ante' }  with your session jwt"],
+    ['2', 'select leetcode_username', 'from profiles where id = auth.uid()'],
+    ['3', 'recentAcSubmissionList(u, limit: 20)', '{ titleSlug timestamp }'],
+    ['4', "inside the table's local day?", "upsert into antes ... status 'verified'"],
+  ]
+  lines.forEach(([n, a, b], i) => {
+    const ly = cy + 15 + i * 8
+    svg.text(18, ly, n, { font: 'mono5', size: 13, fill: P.gold })
+    svg.text(25, ly, a, { font: 'mono5', size: 13, fill: P.ice })
+    svg.text(128, ly, b, { font: 'mono', size: 13, fill: SOFT })
+  })
+  lock(art, 13, 156)
+  svg.text(21, 161.6, 'the handle comes from your profile row, never the request. only the service role writes antes.', { font: 'sans', size: 12.5, fill: MUTE })
+  save('it-checks', art, svg, 'Verification: the browser calls the leetcode edge function, which reads your handle, asks LeetCode for accepted submissions, and writes a verified ante')
+}
+
+function clock(art: Art, cx: number, cy: number): void {
+  art.disc(cx, cy, 12, P.void)
+  art.disc(cx, cy - 1, 12, P.bronze)
+  art.disc(cx, cy - 1, 10, P.chrome)
+  art.disc(cx, cy - 1, 9, P.white)
+  for (let k = 0; k < 12; k++) {
+    const a = (k / 12) * Math.PI * 2
+    art.px(cx + Math.round(Math.sin(a) * 7.5), cy - 1 - Math.round(Math.cos(a) * 7.5), k % 3 === 0 ? P.ink : P['chrome-dim'])
+  }
+  art.dots([[cx, cy - 1], [cx, cy - 7]], P.ink, 1)
+  art.dots([[cx, cy - 1], [cx + 3, cy + 2]], P['chip-red'], 1)
+  art.rect(cx - 1, cy - 2, 2, 2, P.ink)
+}
+
+function ledger(art: Art, x: number, y: number): void {
+  art.box(x, y, 30, 36, { face: P['chip-red-dk'], edge: P.void, hi: P['chip-red'], lo: P.blood })
+  art.rect(x + 4, y + 3, 24, 30, '#f3e6c8')
+  art.rect(x + 4, y + 3, 1, 30, '#d4c39e')
+  for (let j = y + 7; j < y + 31; j += 4) {
+    art.rect(x + 7, j, 12, 1, '#a8987a')
+    art.rect(x + 21, j, 5, 1, P['chip-red'])
+  }
+}
+
+function tzCard(art: Art, svg: Svg, x: number, y: number, tz: string, state: string, ok: boolean): void {
+  art.box(x, y, 66, 13, { face: P.ink, edge: P.void, hi: ok ? P.mint : P.gold, shadow: true })
+  svg.text(x + 4, y + 8.2, tz, { font: 'mono', size: 12, fill: CREAM })
+  svg.text(x + 62, y + 8.2, state, { font: 'mono5', size: 12, fill: ok ? P.mint : P['gold-lt'], anchor: 'end' })
+}
+
+function file(art: Art, x: number, y: number, c: string): void {
+  art.grid(x, y, ['oooooo..', 'oWWWWoo.', 'oWWWWoWo', 'oWWWWWWo', 'oWccWWWo', 'oWWWWWWo', 'oWcccWWo', 'oWWWWWWo', 'oWccWWWo', 'oooooooo'], {
+    o: P.void,
+    W: P.chrome,
+    c,
+  })
+}
+
